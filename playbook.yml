@@ -1,0 +1,36 @@
+---
+- name: Configure Web Server on Target Machine
+  hosts: all
+  become: false
+  tasks:
+    - name: Gather facts / verify connectivity
+      ansible.builtin.setup:
+        filter:
+          - 'ansible_distribution*'
+          - 'ansible_os_family'
+
+    - name: Display target node info
+      ansible.builtin.debug:
+        msg: "Connected to {{ inventory_hostname }} running {{ ansible_distribution | default('Linux') }}"
+
+    - name: Install Nginx web server
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+        update_cache: true
+      when: ansible_os_family == "Debian"
+
+    - name: Deploy custom index.html
+      ansible.builtin.copy:
+        src: index.html
+        dest: /var/www/html/index.html
+        owner: root
+        group: root
+        mode: '0644'
+      when: ansible_os_family == "Debian"
+
+    - name: Ensure Nginx service is started
+      ansible.builtin.service:
+        name: nginx
+        state: started
+      when: ansible_os_family == "Debian"
